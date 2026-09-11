@@ -1,0 +1,63 @@
+/*
+ * Substitutos estáticos do que o Elementor e o Presto Player faziam via JavaScript.
+ * O CSS do Elementor (coluna.css) é gerado; ajustes manuais ficam aqui.
+ */
+
+/*
+ * Carrossel — slides por vista, com os mesmos limites do Swiper (min-width 767/1024).
+ * Vale antes do JS carregar; depois o carousel.js fixa a largura em px, como o Swiper.
+ */
+[data-carousel] { --spv: var(--spv-m); }
+@media (min-width: 767px) { [data-carousel] { --spv: var(--spv-t); } }
+@media (min-width: 1024px) { [data-carousel] { --spv: var(--spv-d); } }
+[data-carousel] .swiper-slide { width: calc(100% / var(--spv)); }
+
+/* Vídeos do YouTube — fachada leve no lugar do Presto Player; o player só carrega no clique */
+.yt-facade,
+.yt-facade__frame {
+	display: block;
+	width: 100%;
+	aspect-ratio: var(--presto-player-aspect-ratio, 9 / 16);
+	border: 0;
+}
+
+.yt-facade {
+	position: relative;
+	padding: 0;
+	overflow: hidden;
+	background: #000;
+	cursor: pointer;
+}
+
+.yt-facade img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.yt-facade__play {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	display: grid;
+	place-items: center;
+	width: 64px;
+	height: 47px;
+	border-radius: 2px;
+	background: var(--plyr-color-main, #d30000);
+	transform: translate(-50%, -50%);
+	transition: filter 0.2s;
+}
+
+.yt-facade__play svg {
+	width: 26px;
+	height: 26px;
+	fill: #fff;
+}
+
+.yt-facade:hover .yt-facade__play,
+.yt-facade:focus-visible .yt-facade__play {
+	filter: brightness(1.2);
+}
