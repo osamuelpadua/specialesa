@@ -1,11 +1,14 @@
 /**
  * Carrossel de imagens — substitui o Swiper do Elementor mantendo a mesma geometria
- * e o mesmo comportamento: largura do slide em px (clientWidth / slides por vista),
- * loop contínuo com clones, autoplay, setas, bolinhas e arraste.
+ * e o mesmo comportamento: largura do slide em px ((largura − espaços) / slides por vista),
+ * espaço entre slides, loop contínuo com clones, autoplay, setas, bolinhas e arraste.
  *
  * Configuração no widget:
  *   data-carousel data-autoplay="5000" data-speed="500"
- *   style="--spv-m:1;--spv-t:2;--spv-d:3"   slides por vista: celular / tablet / desktop
+ *   data-pause-hover         pausa com o mouse em cima (e retoma ao sair)
+ *   data-pause-interaction   para o autoplay depois de um clique/arraste
+ *   style="--spv-m:1;--spv-t:2;--spv-d:3;--gap-m:0;--gap-t:0;--gap-d:20"
+ *     slides por vista e espaço (px) no celular / tablet / desktop
  * Os limites de 767px e 1024px ficam no CSS (static.css), os mesmos do Swiper.
  */
 (() => {
@@ -23,8 +26,10 @@
 		const bullets = [...root.querySelectorAll('.swiper-pagination-bullet')];
 		const delay = Number(root.dataset.autoplay) || 0;
 		const speed = Number(root.dataset.speed) || 300;
-		const spv = (prop) => parseFloat(getComputedStyle(root).getPropertyValue(prop)) || 1;
-		const clones = Math.max(spv('--spv-m'), spv('--spv-t'), spv('--spv-d'));
+		const pauseOnHover = root.hasAttribute('data-pause-hover');
+		const pauseOnInteraction = root.hasAttribute('data-pause-interaction');
+		const cssNumber = (prop) => parseFloat(getComputedStyle(root).getPropertyValue(prop)) || 0;
+		const clones = Math.ceil(Math.max(cssNumber('--spv-m'), cssNumber('--spv-t'), cssNumber('--spv-d'), 1));
 
 		// Clones nas duas pontas, como o loop do Swiper: [n-k … n-1] reais [0 … k-1]
 		const dup = (slide) => {
@@ -49,7 +54,7 @@
 		}, { rootMargin: '800px 0px' }).observe(swiper);
 
 		let index = 0; // slide real ativo
-		let size = 0; // largura de um slide, em px
+		let step = 0; // largura de um slide + espaço, em px
 		let anim = null;
 		let timer = 0;
 		let hover = false;
@@ -57,7 +62,7 @@
 		let visible = false;
 		let drag = null;
 
-		const offset = (i) => -(clones + i) * size;
+		const offset = (i) => -(clones + i) * step;
 		const translate = (x) => `translate3d(${x}px, 0px, 0px)`;
 		const currentX = () => (anim ? new DOMMatrixReadOnly(getComputedStyle(track).transform).m41 : offset(index));
 
@@ -78,8 +83,8 @@
 			halt();
 			// Destino num clone: desloca origem e destino em n slides. O quadro é idêntico e o
 			// trilho sempre termina num slide real (é o que o loopFix do Swiper faz).
-			if (to >= n) { to -= n; from += n * size; }
-			else if (to < 0) { to += n; from -= n * size; }
+			if (to >= n) { to -= n; from += n * step; }
+			else if (to < 0) { to += n; from -= n * step; }
 			index = to;
 
 			track.style.transform = translate(offset(index));
@@ -94,7 +99,7 @@
 				if (i === index) b.setAttribute('aria-current', 'true');
 				else b.removeAttribute('aria-current');
 			});
-			if (byUser) stopped = true; // "pausar na interação" do Elementor
+			if (byUser && pauseOnInteraction) stopped = true;
 			clearTimeout(timer);
 		}
 
@@ -103,8 +108,16 @@
 			const width = swiper.clientWidth - parseInt(cs.paddingLeft, 10) - parseInt(cs.paddingRight, 10);
 			if (width <= 0) return; // oculto (display:none num ancestral): mede de novo quando aparecer
 			halt();
-			size = width / spv('--spv');
-			for (const s of all) s.style.width = `${size}px`;
+			const perView = cssNumber('--spv') || 1;
+			const gap = cssNumber('--gap');
+			const size = (width - gap * (perView - 1)) / perView;
+			step = size + gap;
+			for (const s of all) {
+				s.style.width = `${size}px`;
+				s.style.marginRight = `${gap}px`;
+			}
+			// O Swiper só usa backface-hidden com até 10 slides (contando os clones da vista atual)
+			swiper.classList.toggle('swiper-backface-hidden', n + 2 * Math.ceil(perView) <= 10);
 			track.style.transform = translate(offset(index));
 			schedule();
 		}
@@ -143,7 +156,7 @@
 				if (drag.axis === 'x') swiper.setPointerCapture(e.pointerId);
 			}
 			if (drag.axis !== 'x') return;
-			drag.dx = Math.max(-size, Math.min(size, dx));
+			drag.dx = Math.max(-step, Math.min(step, dx));
 			track.style.transform = translate(drag.base + drag.dx);
 		});
 		const release = (e) => {
@@ -151,24 +164,26 @@
 			const { base, dx, t0, axis } = drag;
 			drag = null;
 			const quick = e.timeStamp - t0 < 300 && Math.abs(dx) > 10;
-			const step = axis === 'x' && (quick || Math.abs(dx) > size / 2) ? (dx < 0 ? 1 : -1) : 0;
-			go(index + step, axis === 'x', base + dx);
+			const move = axis === 'x' && (quick || Math.abs(dx) > step / 2) ? (dx < 0 ? 1 : -1) : 0;
+			go(index + move, axis === 'x', base + dx);
 		};
 		swiper.addEventListener('pointerup', release);
 		swiper.addEventListener('pointercancel', release);
 
-		// Autoplay: pausa com o mouse em cima e fora da tela (não gasta CPU à toa)
-		swiper.addEventListener('pointerenter', (e) => {
-			if (e.pointerType !== 'mouse') return;
-			hover = true;
-			clearTimeout(timer);
-		});
-		swiper.addEventListener('pointerleave', (e) => {
-			if (e.pointerType !== 'mouse') return;
-			hover = false;
-			stopped = false; // o Elementor retoma o autoplay ao tirar o mouse
-			schedule();
-		});
+		// Autoplay: pausa fora da tela (não gasta CPU à toa) e, se configurado, com o mouse em cima
+		if (pauseOnHover) {
+			swiper.addEventListener('pointerenter', (e) => {
+				if (e.pointerType !== 'mouse') return;
+				hover = true;
+				clearTimeout(timer);
+			});
+			swiper.addEventListener('pointerleave', (e) => {
+				if (e.pointerType !== 'mouse') return;
+				hover = false;
+				stopped = false; // o Elementor retoma o autoplay ao tirar o mouse
+				schedule();
+			});
+		}
 		new IntersectionObserver(([entry]) => {
 			visible = entry.isIntersecting;
 			schedule();

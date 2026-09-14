@@ -4,13 +4,16 @@
  */
 
 /*
- * Carrossel — slides por vista, com os mesmos limites do Swiper (min-width 767/1024).
- * Vale antes do JS carregar; depois o carousel.js fixa a largura em px, como o Swiper.
+ * Carrossel — slides por vista e espaço entre slides, com os mesmos limites do Swiper
+ * (min-width 767/1024). Vale antes do JS carregar; depois o carousel.js fixa em px.
  */
-[data-carousel] { --spv: var(--spv-m); }
-@media (min-width: 767px) { [data-carousel] { --spv: var(--spv-t); } }
-@media (min-width: 1024px) { [data-carousel] { --spv: var(--spv-d); } }
-[data-carousel] .swiper-slide { width: calc(100% / var(--spv)); }
+[data-carousel] { --spv: var(--spv-m); --gap: var(--gap-m, 0); }
+@media (min-width: 767px) { [data-carousel] { --spv: var(--spv-t); --gap: var(--gap-t, 0); } }
+@media (min-width: 1024px) { [data-carousel] { --spv: var(--spv-d); --gap: var(--gap-d, 0); } }
+[data-carousel] .swiper-slide {
+	width: calc((100% - var(--gap) * (var(--spv) - 1) * 1px) / var(--spv));
+	margin-right: calc(var(--gap) * 1px);
+}
 
 /* Vídeos do YouTube — fachada leve no lugar do Presto Player; o player só carrega no clique */
 .yt-facade,
