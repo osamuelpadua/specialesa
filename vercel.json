@@ -1,7 +1,38 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "trailingSlash": true,
+  "redirects": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "www.specialesa.com.br" }], "destination": "https://specialesa.com.br/:path*", "permanent": true },
+
+    { "source": "/home", "destination": "/", "permanent": true },
+    { "source": "/home/", "destination": "/", "permanent": true },
+    { "source": "/links", "destination": "/", "permanent": true },
+    { "source": "/links/", "destination": "/", "permanent": true },
+
+    { "source": "/COLUNA", "destination": "/coluna/", "permanent": true },
+    { "source": "/COLUNA/", "destination": "/coluna/", "permanent": true },
+    { "source": "/coluna-gads", "destination": "/coluna/", "permanent": true },
+    { "source": "/coluna-gads/", "destination": "/coluna/", "permanent": true },
+    { "source": "/coluna-meta", "destination": "/coluna/", "permanent": true },
+    { "source": "/coluna-meta/", "destination": "/coluna/", "permanent": true },
+    { "source": "/liberacao-gads", "destination": "/liberacao/", "permanent": true },
+    { "source": "/liberacao-gads/", "destination": "/liberacao/", "permanent": true },
+    { "source": "/liberacao-cos", "destination": "/liberacao/", "permanent": true },
+    { "source": "/liberacao-cos/", "destination": "/liberacao/", "permanent": true },
+    { "source": "/pilates-gads", "destination": "/pilates-clinico/", "permanent": true },
+    { "source": "/pilates-gads/", "destination": "/pilates-clinico/", "permanent": true },
+
+    { "source": "/wp-sitemap.xml", "destination": "/sitemap.xml", "permanent": true },
+    { "source": "/sitemap_index.xml", "destination": "/sitemap.xml", "permanent": true }
+  ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "specialesa.vercel.app" }],
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [
