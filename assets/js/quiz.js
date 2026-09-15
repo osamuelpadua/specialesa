@@ -2,8 +2,10 @@
  * Questionário antes do WhatsApp — página /coluna (inspirado no quiz do Dr. Danilo Soares).
  *
  * Todo CTA que leva ao WhatsApp (a[href^="https://wa.me/"]) abre o questionário. No fim, a
- * mensagem pré-preenchida leva o nome, o WhatsApp e TODAS as respostas. Nada é gravado em lugar nenhum:
- * as respostas chegam só pela conversa. Se o JS falhar, os CTAs continuam sendo links wa.me.
+ * mensagem pré-preenchida leva o nome, o WhatsApp e TODAS as respostas. As mesmas respostas vão
+ * para a planilha do Google (apps-script/Codigo.gs) já na tela final, para a equipe ter o
+ * contato até de quem não clica em "Enviar no WhatsApp". Se o JS falhar, os CTAs continuam
+ * sendo links wa.me.
  *
  * O CSS (assets/css/quiz.css) é carregado por este script, sem bloquear a renderização.
  */
@@ -14,6 +16,9 @@
 	const CONFIG = {
 		whatsapp: '5571991019525',
 		intro: 'Vim pela página de tratamento de dor na coluna e gostaria de informações sobre o método COLUNA LIVRE.',
+		// URL do App da Web do Google Apps Script que grava na planilha (termina em /exec).
+		// Vazia: o questionário funciona igual, só não grava. Ver apps-script/Codigo.gs.
+		planilha: 'https://script.google.com/macros/s/AKfycbzzif6BMxF7oeZaoYAQRG927QekZmoamJ1JZMn0HuASsJURJrTba3_v-BNPH7dLSJ0E/exec',
 		steps: [
 			{
 				key: 'presencial',
@@ -68,6 +73,36 @@
 	let overlay, box, body, bar, answers, trigger;
 
 	const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+	// ---- Planilha -------------------------------------------------------------------------------
+
+	// Um ID por WhatsApp nesta visita: refazer o questionário atualiza a mesma linha
+	const leadIds = {};
+	const newId = () => (window.crypto && crypto.randomUUID
+		? crypto.randomUUID()
+		: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`);
+
+	function source() {
+		const params = new URLSearchParams(location.search);
+		const data = { pagina: location.href, referrer: document.referrer };
+		for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) data[k] = params.get(k) || '';
+		return data;
+	}
+
+	// Sem esperar resposta (o Apps Script não libera CORS). keepalive: o envio termina mesmo
+	// quando a pessoa sai da página para o WhatsApp.
+	function save(lead) {
+		if (!CONFIG.planilha) return;
+		try {
+			fetch(CONFIG.planilha, {
+				method: 'POST',
+				mode: 'no-cors',
+				keepalive: true,
+				headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+				body: JSON.stringify(lead),
+			}).catch(() => {});
+		} catch (e) { /* sem fetch: fica só a mensagem do WhatsApp */ }
+	}
 
 	// Eventos para as tags que forem configuradas (sem nenhuma tag, não fazem nada)
 	function track(event, extra = {}) {
@@ -159,6 +194,7 @@
 			+ '<input class="sq-input" type="tel" name="whatsapp" placeholder="Seu WhatsApp com DDD" autocomplete="tel" inputmode="tel" enterkeyhint="done" aria-label="Seu WhatsApp com DDD" aria-describedby="sq-error-whatsapp" required>'
 			+ '<p class="sq-error" id="sq-error-whatsapp" hidden></p>'
 			+ '<button class="sq-btn" type="submit">Continuar</button>'
+			+ '<p class="sq-note">Usamos seu nome e WhatsApp só para falar com você sobre o atendimento.</p>'
 			+ '</form>',
 			'.sq-input',
 		);
@@ -208,7 +244,7 @@
 		return `Olá! Meu nome é ${nome}. ${CONFIG.intro}\n\nMinhas respostas:\n${lines.join('\n')}`;
 	}
 
-	// Nome e WhatsApp vão só na mensagem: não entram no dataLayer
+	// Nome e WhatsApp vão só na mensagem e na planilha: não entram no dataLayer
 	function renderSuccess(nome, whatsapp) {
 		progress(TOTAL);
 		const link = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(message(nome, whatsapp))}`;
@@ -219,8 +255,26 @@
 			+ `<a class="sq-btn sq-btn--wa" href="${esc(link)}" target="_blank" rel="noopener">${WA_ICON}Enviar no WhatsApp</a>`,
 			'.sq-btn--wa',
 		);
+
+		// A linha na planilha nasce aqui, antes do clique; o clique só marca "Sim"
+		leadIds[whatsapp] = leadIds[whatsapp] || newId();
+		const lead = {
+			id: leadIds[whatsapp],
+			nome,
+			whatsapp,
+			presencial: answers.presencial || '',
+			caso: answers.caso || '',
+			particular: answers.particular || '',
+			clicou: false,
+			...source(),
+		};
+		save(lead);
 		track('quiz_lead');
-		body.querySelector('.sq-btn--wa').addEventListener('click', () => setTimeout(close, 400));
+
+		body.querySelector('.sq-btn--wa').addEventListener('click', () => {
+			save({ ...lead, clicou: true });
+			setTimeout(close, 400);
+		});
 	}
 
 	// ---- Abrir / fechar -------------------------------------------------------------------------

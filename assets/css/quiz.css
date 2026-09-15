@@ -171,6 +171,13 @@
 	color: #c0533f;
 }
 
+.sq-quiz .sq-note {
+	margin: 2px 0 0;
+	font: 400 13px/1.5 Lato, sans-serif;
+	text-align: center;
+	color: #69727d;
+}
+
 .sq-quiz .sq-btn {
 	display: flex;
 	align-items: center;
