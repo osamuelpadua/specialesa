@@ -163,8 +163,10 @@
 
 .sq-quiz .sq-input.is-invalid { border-color: #c0533f; }
 
+.sq-quiz .sq-error[hidden] { display: none; }
+
 .sq-quiz .sq-error {
-	margin: 0;
+	margin: -4px 0 4px;
 	font: 400 14px/1.4 Lato, sans-serif;
 	color: #c0533f;
 }

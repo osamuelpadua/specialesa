@@ -2,7 +2,7 @@
  * Questionário antes do WhatsApp — página /coluna (inspirado no quiz do Dr. Danilo Soares).
  *
  * Todo CTA que leva ao WhatsApp (a[href^="https://wa.me/"]) abre o questionário. No fim, a
- * mensagem pré-preenchida leva o nome e TODAS as respostas. Nada é gravado em lugar nenhum:
+ * mensagem pré-preenchida leva o nome, o WhatsApp e TODAS as respostas. Nada é gravado em lugar nenhum:
  * as respostas chegam só pela conversa. Se o JS falhar, os CTAs continuam sendo links wa.me.
  *
  * O CSS (assets/css/quiz.css) é carregado por este script, sem bloquear a renderização.
@@ -13,7 +13,7 @@
 	// ---- Configuração: número, texto de abertura e perguntas --------------------------------
 	const CONFIG = {
 		whatsapp: '5571991019525',
-		intro: 'Vim através da BIO do Instagram e gostaria de informações sobre o Plano de tratamento para dores na coluna - método COLUNA LIVRE.',
+		intro: 'Vim pela página de tratamento de dor na coluna e gostaria de informações sobre o método COLUNA LIVRE.',
 		steps: [
 			{
 				key: 'presencial',
@@ -30,19 +30,18 @@
 			},
 			{
 				key: 'caso',
-				summary: 'Sobre a minha dor',
-				question: 'Sobre a sua dor na coluna, o que mais se aplica?',
+				summary: 'Sobre o meu caso',
+				question: 'Sobre o seu caso, o que mais se aplica?',
 				options: [
-					{ label: 'Tenho hérnia de disco ou outro diagnóstico na coluna' },
-					{ label: 'Sinto dor que irradia para a perna ou para o braço' },
-					{ label: 'Tenho dor na lombar ou na cervical, ainda sem diagnóstico' },
 					{ label: 'Já me indicaram cirurgia' },
+					{ label: 'Tenho um problema na coluna e quero evitar cirurgia' },
+					{ label: 'Tenho dor, ainda sem diagnóstico' },
 				],
 			},
 			{
 				key: 'particular',
 				summary: 'Atendimento particular',
-				question: 'O atendimento é particular: não trabalhamos com convênios. Tudo certo seguir assim?',
+				question: 'O atendimento é particular (não trabalhamos com convênios). Mas emitimos nota fiscal para você pedir reembolso ao seu plano, se ele oferecer. Tudo certo seguir assim?',
 				options: [
 					{ label: 'Sim, consigo seguir no particular' },
 					{
@@ -54,7 +53,7 @@
 		],
 	};
 
-	const TOTAL = CONFIG.steps.length + 1; // perguntas + nome
+	const TOTAL = CONFIG.steps.length + 1; // perguntas + nome e WhatsApp
 	const WA_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5 0-.2 0-.4 0-.5 0-.2-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5 4.4.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.4z"/><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18.2c-1.6 0-3.1-.4-4.4-1.2l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>';
 
 	// CSS do questionário, ao lado deste script (../css/quiz.css)
@@ -131,43 +130,88 @@
 		};
 	}
 
+	// WhatsApp brasileiro só com dígitos, sem o +55 e o 0 que o preenchimento automático traz
+	function phoneDigits(value) {
+		let d = value.replace(/\D/g, '').replace(/^0+/, '');
+		if (d.length > 11 && d.startsWith('55')) d = d.slice(2).replace(/^0+/, '');
+		return d.slice(0, 11);
+	}
+
+	// (71) 99999-9999 ou (71) 3333-4444, também com o número pela metade
+	function formatPhone(d) {
+		if (d.length <= 2) return d && `(${d}`;
+		const split = d.length === 11 ? 5 : 4;
+		const rest = d.slice(2);
+		return `(${d.slice(0, 2)}) ${rest.slice(0, split)}${rest.length > split ? `-${rest.slice(split)}` : ''}`;
+	}
+
+	// DDD + celular (9 na frente) ou fixo (WhatsApp Business)
+	const validPhone = (d) => /^[1-9][1-9](?:9\d{8}|[2-5]\d{7})$/.test(d);
+
 	function renderName() {
 		progress(TOTAL - 1);
 		render(
 			`<p class="sq-eyebrow">Passo ${TOTAL} de ${TOTAL}</p>`
-			+ '<h2 class="sq-title" id="sq-title">Por último: como você se chama?</h2>'
+			+ '<h2 class="sq-title" id="sq-title">Por último: seu nome e seu WhatsApp</h2>'
 			+ '<form class="sq-form" novalidate>'
-			+ '<input class="sq-input" type="text" name="nome" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome" required>'
-			+ '<p class="sq-error" hidden></p>'
+			+ '<input class="sq-input" type="text" name="nome" placeholder="Seu nome" autocomplete="name" enterkeyhint="next" aria-label="Seu nome" aria-describedby="sq-error-nome" required>'
+			+ '<p class="sq-error" id="sq-error-nome" hidden></p>'
+			+ '<input class="sq-input" type="tel" name="whatsapp" placeholder="Seu WhatsApp com DDD" autocomplete="tel" inputmode="tel" enterkeyhint="done" aria-label="Seu WhatsApp com DDD" aria-describedby="sq-error-whatsapp" required>'
+			+ '<p class="sq-error" id="sq-error-whatsapp" hidden></p>'
 			+ '<button class="sq-btn" type="submit">Continuar</button>'
 			+ '</form>',
 			'.sq-input',
 		);
 		const form = body.querySelector('.sq-form');
-		const input = form.querySelector('.sq-input');
-		const error = form.querySelector('.sq-error');
+		const nameInput = form.elements.nome;
+		const phoneInput = form.elements.whatsapp;
+
+		const setError = (input, text) => {
+			const error = form.querySelector(`#sq-error-${input.name}`);
+			error.textContent = text;
+			error.hidden = !text;
+			input.classList.toggle('is-invalid', !!text);
+			input.setAttribute('aria-invalid', String(!!text));
+		};
+
+		// Máscara enquanto digita no fim do campo. Apagar não reformata, senão o backspace
+		// trava no hífen e nos parênteses; o blur arruma o que ficar.
+		phoneInput.addEventListener('input', (e) => {
+			if (e.inputType && e.inputType.startsWith('delete')) return;
+			if (phoneInput.selectionStart !== phoneInput.value.length) return;
+			phoneInput.value = formatPhone(phoneDigits(phoneInput.value));
+		});
+		phoneInput.addEventListener('blur', () => { phoneInput.value = formatPhone(phoneDigits(phoneInput.value)); });
+
 		form.addEventListener('submit', (e) => {
 			e.preventDefault();
-			const nome = input.value.trim().replace(/\s+/g, ' ');
-			if (!nome) {
-				error.textContent = 'Por favor, escreva seu nome.';
-				error.hidden = false;
-				input.classList.add('is-invalid');
-				input.focus();
+			const nome = nameInput.value.trim().replace(/\s+/g, ' ');
+			const digits = phoneDigits(phoneInput.value);
+			// Enter no nome, com o WhatsApp ainda vazio, só passa para o próximo campo
+			if (nome && !digits && document.activeElement === nameInput) {
+				setError(nameInput, '');
+				phoneInput.focus();
 				return;
 			}
-			renderSuccess(nome);
+			setError(nameInput, nome ? '' : 'Por favor, escreva seu nome.');
+			setError(phoneInput, validPhone(digits) ? ''
+				: digits ? 'Confira o número: informe o WhatsApp com DDD.' : 'Por favor, informe seu WhatsApp com DDD.');
+			const invalid = form.querySelector('.is-invalid');
+			if (invalid) { invalid.focus(); return; }
+			renderSuccess(nome, formatPhone(digits));
 		});
 	}
 
-	function message(nome) {
+	function message(nome, whatsapp) {
 		const lines = CONFIG.steps.filter((s) => answers[s.key]).map((s) => `- ${s.summary}: ${answers[s.key]}`);
+		lines.push(`- Meu WhatsApp: ${whatsapp}`);
 		return `Olá! Meu nome é ${nome}. ${CONFIG.intro}\n\nMinhas respostas:\n${lines.join('\n')}`;
 	}
 
-	function renderSuccess(nome) {
+	// Nome e WhatsApp vão só na mensagem: não entram no dataLayer
+	function renderSuccess(nome, whatsapp) {
 		progress(TOTAL);
-		const link = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(message(nome))}`;
+		const link = `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(message(nome, whatsapp))}`;
 		render(
 			'<p class="sq-eyebrow">Tudo certo</p>'
 			+ `<h2 class="sq-title" id="sq-title">Perfeito, ${esc(nome)}!</h2>`
