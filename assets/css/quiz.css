@@ -1,0 +1,241 @@
+/*
+ * Questionário antes do WhatsApp (assets/js/quiz.js), com a identidade da Speciale.
+ * Tudo começa com .sq-quiz para vencer os estilos globais do tema (button, h2, input, a).
+ */
+.sq-quiz {
+	position: fixed;
+	inset: 0;
+	z-index: 2147483000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	background: rgba(46, 66, 39, 0.72);
+	-webkit-backdrop-filter: blur(3px);
+	backdrop-filter: blur(3px);
+}
+
+/* o display:flex acima venceria o [hidden] e deixaria uma camada invisível bloqueando a página */
+.sq-quiz[hidden] { display: none; }
+
+.sq-quiz *,
+.sq-quiz *::before,
+.sq-quiz *::after { box-sizing: border-box; }
+
+.sq-quiz .sq-box {
+	position: relative;
+	width: 100%;
+	max-width: 520px;
+	max-height: calc(100vh - 40px);
+	max-height: calc(100dvh - 40px);
+	overflow-y: auto;
+	background: #f1f0ea;
+	border-radius: 20px;
+	box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.5);
+	outline: none;
+}
+
+.sq-quiz .sq-progress {
+	height: 4px;
+	background: rgba(46, 66, 39, 0.12);
+	border-radius: 20px 20px 0 0;
+	overflow: hidden;
+}
+
+.sq-quiz .sq-progress-bar {
+	display: block;
+	width: 4%;
+	height: 100%;
+	background: #7e8c54;
+	transition: width 0.3s ease;
+}
+
+.sq-quiz .sq-close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 36px;
+	height: 36px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	font: 400 28px/1 Lato, sans-serif;
+	color: #69727d;
+	white-space: normal;
+	cursor: pointer;
+}
+
+.sq-quiz .sq-close:hover,
+.sq-quiz .sq-close:focus-visible {
+	background: rgba(46, 66, 39, 0.08);
+	color: #2e4227;
+}
+
+.sq-quiz .sq-body { padding: 34px clamp(22px, 5vw, 38px) clamp(26px, 5vw, 36px); }
+
+.sq-quiz .sq-eyebrow {
+	margin: 0;
+	padding-right: 32px;
+	font: 600 12px/1.4 Montserrat, sans-serif;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: #7e8c54;
+}
+
+.sq-quiz .sq-title {
+	margin: 12px 0 0;
+	padding: 0;
+	font: 500 clamp(22px, 3.4vw, 28px)/1.25 elgraine-medium, Georgia, serif;
+	letter-spacing: normal;
+	text-transform: none;
+	color: #2e4227;
+}
+
+.sq-quiz .sq-text {
+	margin: 14px 0 0;
+	font: 400 16px/1.6 Lato, sans-serif;
+	color: #333;
+}
+
+.sq-quiz .sq-options {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 24px;
+}
+
+.sq-quiz .sq-option {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 16px 18px;
+	font: 400 16px/1.45 Lato, sans-serif;
+	letter-spacing: normal;
+	text-align: left;
+	text-transform: none;
+	white-space: normal;
+	color: #2e4227;
+	background: #fff;
+	border: 1px solid rgba(46, 66, 39, 0.18);
+	border-radius: 14px;
+	cursor: pointer;
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sq-quiz .sq-option:hover,
+.sq-quiz .sq-option:focus-visible {
+	color: #2e4227;
+	background: #fff;
+	border-color: #7e8c54;
+	box-shadow: 0 0 0 3px rgba(126, 140, 84, 0.18);
+	outline: none;
+}
+
+.sq-quiz .sq-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin: 24px 0 0;
+}
+
+.sq-quiz .sq-input {
+	width: 100%;
+	margin: 0;
+	padding: 15px 18px;
+	font: 400 16px/1.4 Lato, sans-serif;
+	color: #2e4227;
+	background: #fff;
+	border: 1px solid rgba(46, 66, 39, 0.18);
+	border-radius: 14px;
+	box-shadow: none;
+	transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sq-quiz .sq-input::placeholder { color: #8a9185; }
+
+.sq-quiz .sq-input:focus {
+	outline: none;
+	border-color: #7e8c54;
+	box-shadow: 0 0 0 3px rgba(126, 140, 84, 0.18);
+}
+
+.sq-quiz .sq-input.is-invalid { border-color: #c0533f; }
+
+.sq-quiz .sq-error {
+	margin: 0;
+	font: 400 14px/1.4 Lato, sans-serif;
+	color: #c0533f;
+}
+
+.sq-quiz .sq-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	width: 100%;
+	margin: 8px 0 0;
+	padding: 16px 24px;
+	font: 500 17px/1.2 Montserrat, sans-serif;
+	letter-spacing: normal;
+	text-align: center;
+	text-decoration: none;
+	text-transform: none;
+	white-space: normal;
+	color: #fff;
+	background: #2e4227;
+	border: 1px solid transparent;
+	border-radius: 20px;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.sq-quiz .sq-btn:hover,
+.sq-quiz .sq-btn:focus-visible {
+	color: #fff;
+	background: #4f6f44;
+}
+
+.sq-quiz .sq-btn--ghost {
+	color: #2e4227;
+	background: transparent;
+	border-color: rgba(46, 66, 39, 0.35);
+}
+
+.sq-quiz .sq-btn--ghost:hover,
+.sq-quiz .sq-btn--ghost:focus-visible {
+	color: #2e4227;
+	background: rgba(46, 66, 39, 0.06);
+	border-color: #2e4227;
+}
+
+/* mesmo verde dos botões "AGENDE UMA CONSULTA" da página */
+.sq-quiz .sq-btn--wa { background: #00d31d; }
+
+.sq-quiz .sq-btn--wa:hover,
+.sq-quiz .sq-btn--wa:focus-visible {
+	color: #fff;
+	background: #00b519;
+}
+
+/* anel de foco do teclado no tom da página, no lugar do contorno preto do navegador */
+.sq-quiz .sq-btn:focus-visible,
+.sq-quiz .sq-close:focus-visible {
+	outline: 3px solid rgba(126, 140, 84, 0.55);
+	outline-offset: 2px;
+}
+
+.sq-quiz .sq-btn svg {
+	flex: none;
+	width: 22px;
+	height: 22px;
+	fill: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sq-quiz .sq-progress-bar,
+	.sq-quiz .sq-option,
+	.sq-quiz .sq-input,
+	.sq-quiz .sq-btn { transition: none; }
+}
